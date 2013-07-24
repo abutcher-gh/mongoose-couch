@@ -10,7 +10,8 @@
     "ms": "0.1.0",
     "sliced": "0.0.3",
     "mpromise": "0.2.1",
-    "mpath": "0.1.1"
+    "mpath": "0.1.1",
+    "nano": "~4.1.1"
   },
   "devDependencies": {
     "should": "~1.2.2",
