@@ -40,6 +40,13 @@ var AccountSchema = new Schema({
 
 module.exports = Account = mongoose.model('Account', AccountSchema);
 
+Account.collection.ensureIndex({
+  all: {
+      map: function(doc) {
+          emit(null, null);
+      }
+  }
+});
 
 var account = new Account({
   slug: 'hello',
