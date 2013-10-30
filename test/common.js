@@ -100,7 +100,7 @@ module.exports = function (options) {
  * testing uri
  */
 
-module.exports.uri = process.env.MONGOOSE_TEST_URI || 'mongodb://localhost/mongoose_test';
+module.exports.uri = process.env.MONGOOSE_TEST_URI || 'http://localhost:5984/mongoose_test';
 
 /**
  * expose mongoose

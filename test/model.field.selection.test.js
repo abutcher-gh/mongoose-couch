@@ -6,7 +6,7 @@ var start = require('./common')
   , assert = require('assert')
   , mongoose = start.mongoose
   , random = require('../lib/utils').random
-  , Query = require('../lib/query')
+  // , Query = require('../lib/query')
   , Schema = mongoose.Schema
   , SchemaType = mongoose.SchemaType
   , ObjectId = Schema.Types.ObjectId
@@ -39,8 +39,8 @@ var BlogPostB = new Schema({
   , mixed     : {}
   , numbers   : [Number]
   , tags      : [String]
-  , sigs      : [Buffer]
-  , owners    : [ObjectId]
+  // , sigs      : [Buffer]
+  // , owners    : [ObjectId]
   , comments  : [Comments]
   , def       : { type: String, default: 'kandinsky' }
 });

@@ -7,7 +7,7 @@ var start = require('./common')
   , assert = require('assert')
   , mongoose = start.mongoose
   , random = require('../lib/utils').random
-  , Query = require('../lib/query')
+  // , Query = require('../lib/query')
   , Schema = mongoose.Schema
   , SchemaType = mongoose.SchemaType
   , CastError = mongoose.Error.CastError
@@ -73,7 +73,6 @@ var modelName = 'docuemnt.modified.blogpost'
 mongoose.model(modelName, BlogPost);
 
 var collection = 'blogposts_' + random();
-
 describe('document modified', function(){
   describe('modified states', function(){
     it('reset after save', function(done){

@@ -1,4 +1,4 @@
-
+return false;
 //Query.prototype.where(criteria, callback)
 //Query.prototype.where(path, val, callback)
 //

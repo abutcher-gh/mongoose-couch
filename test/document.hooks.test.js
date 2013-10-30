@@ -33,13 +33,14 @@ var em = new Schema({ title: String, body: String });
 em.virtual('works').get(function () {
   return 'em virtual works'
 });
+console.log('\n\n\n\n\n\n\n\n\n\n\n\n\n\n-0000000\\n\n\n\n')
 var schema = new Schema({
     test    : String
   , oids    : [ObjectId]
   , numbers : [Number]
   , nested  : {
         age   : Number
-      , cool  : ObjectId
+      // , cool  : ObjectId
       , deep  : { x: String }
       , path  : String
       , setr  : String
