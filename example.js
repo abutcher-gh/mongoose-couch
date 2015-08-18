@@ -2,7 +2,7 @@ var mongoose = require('./lib/index');
 var Schema = mongoose.Schema;
 var cradle = require('cradle');
 
-mongoose.connect('http://localhost', 5984, {
+mongoose.connect('http://localhost', process.env.COUCH_PORT || 5984, {
   cache: process.env.NO_CACHE ? false : true,
   raw: false
 });
