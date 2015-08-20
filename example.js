@@ -80,7 +80,7 @@ Account.find({}).remove(function(err, res) {
 
     process.nextTick(function() {
 
-      account.save(function(err) {
+      Account.create(account, function(err) {
         console.log("SAVE.1 err =:\n", err);
 
         account.roles.push('admin');
