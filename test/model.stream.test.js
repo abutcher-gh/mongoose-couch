@@ -141,7 +141,7 @@ describe('query stream:', function(){
   });
 
   it('destroying a stream stops it', function(done){
-    this.slow(300);
+    //this.slow(300);
 
     var db = start()
       , P = db.model('PersonForStream', collection)
@@ -180,7 +180,7 @@ describe('query stream:', function(){
   });
 
   it('errors', function(done){
-    this.slow(300);
+    //this.slow(300);
 
     var db = start({ server: { auto_reconnect: false }})
       , P = db.model('PersonForStream', collection)
@@ -205,7 +205,7 @@ describe('query stream:', function(){
     function cb (err) {
       ++finished;
       setTimeout(function () {
-        assert.ok(/no open connections|Connection was destroyed by application/.test(err.message), err.message);
+        assert.equal('no open connections', err.message);
         assert.equal(i, 5);
         assert.equal(1, closed);
         assert.equal(1, finished);
@@ -223,12 +223,11 @@ describe('query stream:', function(){
       , filename = '/tmp/_mongoose_stream_out.txt'
       , out = fs.createWriteStream(filename)
 
-    var opts = { transform: JSON.stringify }
-    var stream = P.find().sort('name').limit(20).stream(opts);
+    var stream = P.find().sort('name').limit(20).stream();
     stream.pipe(out);
 
     stream.on('error', cb);
-    out.on('close', cb);
+    stream.on('close', cb);
 
     function cb (err) {
       db.close();
@@ -328,46 +327,5 @@ describe('query stream:', function(){
         done(error);
       })
     })
-  })
-
-  it('supports population (gh-1411)', function(done){
-    var db = start();
-
-    var barSchema = Schema({
-      value: Number
-    });
-
-    var fooSchema = Schema({
-      bar: { type: "ObjectId", ref: "Bar" }
-    });
-
-    var Foo = db.model('Foo', fooSchema);
-    var Bar = db.model('Bar', barSchema);
-    var found = [];
-
-    Bar.create({ value: 2 }, { value: 3 }, function(err, bar1, bar2){
-      if (err) return complete(err);
-
-      Foo.create({ bar: bar1 }, { bar: bar2 }, function(err){
-        if (err) return complete(err);
-
-        Foo.find().populate("bar").stream()
-        .on('data', function(foo){
-          found.push(foo.bar.value);
-        })
-        .on('end', complete)
-        .on('error', complete);
-      });
-    });
-
-    function complete (err) {
-      if (!err) {
-        assert.ok(~found.indexOf(2));
-        assert.ok(~found.indexOf(3));
-      }
-      db.close(function () {
-        done(err);
-      })
-    }
   })
 });

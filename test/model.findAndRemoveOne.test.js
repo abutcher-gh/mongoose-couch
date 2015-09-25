@@ -304,14 +304,18 @@ describe('model: findByIdAndRemove:', function(){
       , query;
 
     query = M.findByIdAndRemove(_id, { sort: 'author -title' });
-    assert.equal(2, Object.keys(query.options.sort).length);
-    assert.equal(1, query.options.sort.author);
-    assert.equal(-1, query.options.sort.title);
+    assert.equal(2, query.options.sort.length);
+    assert.equal('author', query.options.sort[0][0]);
+    assert.equal(1, query.options.sort[0][1]);
+    assert.equal('title', query.options.sort[1][0]);
+    assert.equal(-1, query.options.sort[1][1]);
 
     query = M.findOneAndRemove({}, { sort: 'author -title' });
-    assert.equal(2, Object.keys(query.options.sort).length);
-    assert.equal(1, query.options.sort.author);
-    assert.equal(-1, query.options.sort.title);
+    assert.equal(2, query.options.sort.length);
+    assert.equal('author', query.options.sort[0][0]);
+    assert.equal(1, query.options.sort[0][1]);
+    assert.equal('title', query.options.sort[1][0]);
+    assert.equal(-1, query.options.sort[1][1]);
     done();
   })
 
@@ -326,38 +330,19 @@ describe('model: findByIdAndRemove:', function(){
       , query;
 
     query = M.findByIdAndRemove(_id, { sort: { author: 1, title: -1 }});
-    assert.equal(2, Object.keys(query.options.sort).length);
-    assert.equal(1, query.options.sort.author);
-    assert.equal(-1, query.options.sort.title);
+    assert.equal(2, query.options.sort.length);
+    assert.equal('author', query.options.sort[0][0]);
+    assert.equal(1, query.options.sort[0][1]);
+    assert.equal('title', query.options.sort[1][0]);
+    assert.equal(-1, query.options.sort[1][1]);
 
     query = M.findOneAndRemove(_id, { sort: { author: 1, title: -1 }});
-    assert.equal(2, Object.keys(query.options.sort).length);
-    assert.equal(1, query.options.sort.author);
-    assert.equal(-1, query.options.sort.title);
+    assert.equal(2, query.options.sort.length);
+    assert.equal('author', query.options.sort[0][0]);
+    assert.equal(1, query.options.sort[0][1]);
+    assert.equal('title', query.options.sort[1][0]);
+    assert.equal(-1, query.options.sort[1][1]);
     done();
   });
 
-  it('supports population (gh-1395)', function(done){
-    var db = start();
-    var M = db.model('A', { name: String });
-    var N = db.model('B', { a: { type: Schema.ObjectId, ref: 'A' }, i: Number})
-
-    M.create({ name: 'i am an A' }, function (err, a) {
-      if (err) return done(err);
-      N.create({ a: a._id, i: 10 }, function (err, b) {
-        if (err) return done(err);
-
-        N.findOneAndRemove({ _id: b._id }, { select: 'a -_id' })
-        .populate('a')
-        .exec(function (err, doc) {
-          if (err) return done(err);
-          assert.ok(doc);
-          assert.equal(undefined, doc._id);
-          assert.ok(doc.a);
-          assert.equal(doc.a.name, 'i am an A');
-          done();
-        })
-      })
-    })
-  })
 })

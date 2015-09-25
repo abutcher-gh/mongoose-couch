@@ -136,7 +136,7 @@ describe('versioning', function(){
       assert.ok(/No matching document/.test(err), err);
       assert.equal(a._doc.__v, 5)
       a.set('arr.0.0', 'updated');
-      var d = a.$__delta();
+      var d = a._delta();
       assert.equal(a._doc.__v, d[0].__v, 'version should be added to where clause')
       assert.ok(!('$inc' in d[1]));
       save(a,b,test5);
@@ -228,7 +228,7 @@ describe('versioning', function(){
       a.comments.addToSet({ title: 'monkey' });
       b.markModified('comments');
 
-      var d = b.$__delta();
+      var d = b._delta();
       assert.ok(d[1].$inc, 'a $set of an array should trigger versioning');
 
       save(a, b, test12);
@@ -241,7 +241,7 @@ describe('versioning', function(){
 
       a.comments.addToSet({ title: 'aven' });
       a.comments.addToSet({ title: 'avengers' });
-      var d = a.$__delta();
+      var d = a._delta();
 
       assert.equal(undefined, d[0].__v, 'version should not be included in where clause');
       assert.ok(!d[1].$set);
@@ -249,7 +249,7 @@ describe('versioning', function(){
       assert.ok(d[1].$addToSet.comments);
 
       a.comments.$shift();
-      var d = a.$__delta();
+      var d = a._delta();
       assert.equal(12, d[0].__v, 'version should be included in where clause');
       assert.ok(d[1].$set, 'two differing atomic ops on same path should create a $set');
       assert.ok(d[1].$inc, 'a $set of an array should trigger versioning');
@@ -262,23 +262,25 @@ describe('versioning', function(){
     function save (a, b, cb) {
       var pending = 2;
       var e;
-      // make sure that a saves before b
       a.save(function (err) {
         if (err) e = err;
-        b.save(function (err) {
-          if (err) e = err;
-          lookup();
-        });
+        if (--pending) return;
+        lookup();
+      });
+      b.save(function (err) {
+        if (err) e = err;
+        if (--pending) return;
+        lookup();
       });
       function lookup () {
         var a1, b1;
         V.findById(a, function (err, a_) {
-          if (err && !e) e = err;
+          if (err) e = err;
           a1 = a_;
           a1 && b1 && cb(e, a1, b1);
         });
         V.findById(b, function (err, b_) {
-          if (err && !e) e = err;
+          if (err) e = err;
           b1 = b_;
           a1 && b1 && cb(e, a1, b1);
         });
@@ -309,7 +311,7 @@ describe('versioning', function(){
         db.close();
         assert.ifError(err);
         doc.comments[0].title = 'no version was included';
-        var d = doc.$__delta();
+        var d = doc._delta();
         assert.ok(!d[0].__v, 'no version key was selected so should not be included');
         done();
       })
@@ -354,7 +356,7 @@ describe('versioning', function(){
         assert.ifError(err);
         assert.ok(!d._doc.__v);
         d.numbers.splice(1, 1, 10);
-        var o = d.$__delta();
+        var o = d._delta();
         assert.equal(undefined, o[0].__v);
         assert.ok(o[1].$inc);
         assert.equal(1, o[1].$inc.__v);
@@ -403,7 +405,7 @@ describe('versioning', function(){
         assert.equal(false, '__v' in doc._doc);
 
         doc.set('x.0', 'updated');
-        var d = doc.$__delta()[0];
+        var d = doc._delta()[0];
         assert.equal(undefined, d.__v, 'version should not be added to where clause')
 
         M.collection.findOne({ _id: doc._id }, function (err, doc) {
@@ -413,58 +415,4 @@ describe('versioning', function(){
       })
     });
   })
-
-  it('works with numbericAlpha paths', function(done){
-    var db = start();
-    var M = db.model('Versioning');
-    var m = new M;
-    m.init({ mixed: {}});
-    var path = 'mixed.4a';
-    m.set(path, 2);
-    m.save(function (err) {
-      assert.ifError(err);
-      done();
-    })
-  })
-
-  describe('doc.increment()', function(){
-    it('works without any other changes (gh-1475)', function(done){
-      var db = start()
-        , V = db.model('Versioning')
-
-      var doc = new V;
-      doc.save(function (err) {
-        assert.ifError(err);
-        assert.equal(0, doc.__v);
-
-        doc.increment();
-
-        doc.save(function (err) {
-          assert.ifError(err);
-
-          assert.equal(1, doc.__v);
-
-          V.findById(doc, function (err, doc) {
-            assert.ifError(err);
-            assert.equal(1, doc.__v);
-            done();
-          })
-        })
-      })
-    })
-  })
-
-  describe('versioning is off', function(){
-    it('when { safe : false } is set (gh-1520)', function(done){
-      var schema1 = new Schema({ title : String}, { safe : false });
-      assert.equal(schema1.options.versionKey, false);
-      done();
-    })
-    it('when { safe : { w: 0 }} is set (gh-1520)', function(done){
-      var schema1 = new Schema({ title : String}, { safe : { w: 0 } });
-      assert.equal(schema1.options.versionKey, false);
-      done();
-    })
-  })
-
 })

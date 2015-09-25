@@ -21,7 +21,7 @@ function Dummy () {
   mongoose.Document.call(this, {});
 }
 Dummy.prototype.__proto__ = mongoose.Document.prototype;
-Dummy.prototype.$__setSchema(new Schema)
+Dummy.prototype._setSchema(new Schema)
 
 function Subdocument () {
   var arr = new DocumentArray;
@@ -41,7 +41,7 @@ Subdocument.prototype.__proto__ = EmbeddedDocument.prototype;
  * Set schema.
  */
 
-Subdocument.prototype.$__setSchema(new Schema({
+Subdocument.prototype._setSchema(new Schema({
     test: { type: String, required: true }
   , work: { type: String, validate: /^good/ }
 }));
@@ -52,7 +52,6 @@ Subdocument.prototype.$__setSchema(new Schema({
 
 var RatingSchema = new Schema({
     stars: Number
-  , description: { source: { url: String, time: Date }}
 });
 
 var MovieSchema = new Schema({
@@ -76,7 +75,7 @@ describe('types.document', function(){
     a.save(function(err){
       assert.ok(a.__parent.$__.validationError instanceof ValidationError);
       assert.equal(a.__parent.errors['jsconf.ar.0.work'].name, 'ValidatorError');
-      assert.equal(a.__parent.$__.validationError.toString(), 'ValidationError: Path `test` is required., Validator failed for path `work` with value `nope`');
+      assert.equal(a.__parent.$__.validationError.toString(), 'ValidationError: Validator "required" failed for path test with value ``, Validator failed for path work with value `nope`');
       done();
     });
   });
@@ -196,59 +195,11 @@ describe('types.document', function(){
     });
   });
 
-  describe('setting nested objects', function(){
-    it('works (gh-1394)', function(done){
-      var db = start();
-      var Movie = db.model('Movie');
-
-      Movie.create({
-          title: 'Life of Pi'
-        , ratings: [{
-              description: {
-                  source: {
-                      url: 'http://www.imdb.com/title/tt0454876/'
-                    , time: new Date
-                  }
-              }
-          }]
-      }, function (err, movie) {
-        assert.ifError(err);
-
-        Movie.findById(movie, function (err, movie) {
-          assert.ifError(err);
-
-          assert.ok(movie.ratings[0].description.source.time instanceof Date);
-          movie.ratings[0].description.source = { url: 'http://www.lifeofpimovie.com/' };
-
-          movie.save(function (err) {
-            assert.ifError(err);
-
-            Movie.findById(movie, function (err, movie) {
-              assert.ifError(err);
-
-              assert.equal('http://www.lifeofpimovie.com/', movie.ratings[0].description.source.url);
-
-              // overwritten date
-              assert.equal(undefined, movie.ratings[0].description.source.time);
-
-              var newDate = new Date;
-              movie.ratings[0].set('description.source.time', newDate, { merge: true });
-              movie.save(function (err) {
-                assert.ifError(err);
-
-                Movie.findById(movie, function (err, movie) {
-                  assert.ifError(err);
-                  assert.equal(String(newDate), movie.ratings[0].description.source.time);
-                  // url not overwritten using merge
-                  assert.equal('http://www.lifeofpimovie.com/', movie.ratings[0].description.source.url);
-                  done();
-                });
-              });
-            });
-          })
-        });
-      });
-    })
+  it('`path` can be used as a path (gh-1245)', function(done){
+    var sub = Schema({ path: String });
+    var s = Schema({ els: [sub] });
+    var M = mongoose.model('gh-1245', s);
+    var m = new M({ els: [{ path: 'what' }] });
+    done();
   })
-
 });

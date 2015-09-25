@@ -218,11 +218,9 @@ describe('utils', function(){
     assert.equal('primary', r.mode);
 
     var r = utils.readPref('pp');
-    assert.ok(r.isValid());
-    assert.equal('primaryPreferred', r.mode);
-    var r = utils.readPref('primaryPreferred');
-    assert.ok(r.isValid());
-    assert.equal('primaryPreferred', r.mode);
+    assert.equal('primaryPrefered', r.mode);
+    var r = utils.readPref('primaryPrefered');
+    assert.equal('primaryPrefered', r.mode);
 
     var r = utils.readPref('s');
     assert.equal('secondary', r.mode);
@@ -230,11 +228,9 @@ describe('utils', function(){
     assert.equal('secondary', r.mode);
 
     var r = utils.readPref('sp');
-    assert.ok(r.isValid());
-    assert.equal('secondaryPreferred', r.mode);
-    var r = utils.readPref('secondaryPreferred');
-    assert.ok(r.isValid());
-    assert.equal('secondaryPreferred', r.mode);
+    assert.equal('secondaryPrefered', r.mode);
+    var r = utils.readPref('secondaryPrefered');
+    assert.equal('secondaryPrefered', r.mode);
 
     var r = utils.readPref('n');
     assert.equal('nearest', r.mode);
@@ -242,7 +238,7 @@ describe('utils', function(){
     assert.equal('nearest', r.mode);
 
     var r = utils.readPref('explode');
-    assert.equal(false, r.isValid());
+    assert.equal(false, r.isValid(r.model));
     done();
   })
 
@@ -258,23 +254,6 @@ describe('utils', function(){
       assert.equal(a.global, b.global);
       assert.equal(a.ignoreCase, b.ignoreCase);
       assert.equal(a.multiline, b.multiline);
-      done();
-    })
-
-    it('clones objects created with Object.create(null)', function(done){
-      var o = Object.create(null);
-      o.a = 0;
-      o.b = '0';
-      o.c = 1;
-      o.d = '1';
-
-      var out = utils.clone(o);
-      assert.strictEqual(0, out.a);
-      assert.strictEqual('0', out.b);
-      assert.strictEqual(1, out.c);
-      assert.strictEqual('1', out.d);
-      assert.equal(4, Object.keys(out).length);
-
       done();
     })
   })
@@ -297,38 +276,6 @@ describe('utils', function(){
       assert.equal(a.global, b.global);
       assert.equal(a.ignoreCase, b.ignoreCase);
       assert.equal(a.multiline, b.multiline);
-      done();
-    })
-  })
-
-  describe('merge', function(){
-    it('merges two objects together without overriding properties & methods', function(done){
-      function To() {
-        this.name = 'to';
-        this.toProperty = true;
-      }
-      To.prototype.getName = function() {};
-      To.prototype.toMethod = function() {};
-
-      function From() {
-        this.name = 'from';
-        this.fromProperty = true;
-      }
-      From.prototype.getName = function() {};
-      From.prototype.fromMethod = function() {};
-
-      var to = new To();
-      var from = new From();
-
-      utils.merge(to, from);
-
-      assert.equal(to.name, 'to');
-      assert.equal(to.toProperty, true);
-      assert.equal(to.fromProperty, true);
-      assert.ok(to.getName === To.prototype.getName);
-      assert.ok(to.toMethod === To.prototype.toMethod);
-      assert.equal(to.fomMethod, From.prototype.fomMethod);
-
       done();
     })
   })

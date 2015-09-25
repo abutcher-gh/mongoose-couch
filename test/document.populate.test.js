@@ -61,7 +61,8 @@ var schema = new Schema({
   , em: [em]
   , date: Date
 });
-TestDocument.prototype.$__setSchema(schema);
+TestDocument.prototype._setSchema(schema);
+
 
 /**
  * User schema.
@@ -481,24 +482,6 @@ describe('document.populate', function(){
           assert.equal(id0, post.comments[0]._creator.id);
           assert.equal(id1, post.comments[1]._creator.id);
           done();
-        })
-      })
-    })
-  })
-
-  describe('of new document', function(){
-    it('should save just the populated _id (gh-1442)', function(done){
-      var b = new B({ _creator: user1 });
-      b.populate('_creator', function (err, b) {
-        if (err) return done(err);
-        assert.equal('Phoenix', b._creator.name);
-        b.save(function (err) {
-          assert.ifError(err);
-          B.collection.findOne({ _id: b._id }, function (err, b) {
-            assert.ifError(err);
-            assert.equal(b._creator, String(user1._id));
-            done();
-          })
         })
       })
     })

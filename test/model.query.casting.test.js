@@ -62,7 +62,7 @@ describe('model query casting', function(){
       , title = 'Loki ' + random();
 
     var post = new BlogPostB()
-      , id = post.get('_id').toString()
+      , id = DocumentObjectId.toString(post.get('_id'));
 
     post.set('title', title);
 
@@ -121,7 +121,7 @@ describe('model query casting', function(){
       , BlogPostB = db.model(modelName, collection);
 
     var post = new BlogPostB()
-      , id = post._id.toString()
+      , id = DocumentObjectId.toString(post._id);
 
     post.save(function (err) {
       assert.ifError(err);
@@ -129,7 +129,7 @@ describe('model query casting', function(){
       BlogPostB.findOne({ _id: { $in: [id] } }, function (err, doc) {
         assert.ifError(err);
 
-        assert.equal(doc._id.toString(), id);
+        assert.equal(DocumentObjectId.toString(doc._id), id);
         db.close();
         done();
       });
@@ -177,7 +177,7 @@ describe('model query casting', function(){
       P.findOne({ _id: post._id, 'meta.date': { $lte: Date.now() } }, function (err, doc) {
         assert.ifError(err);
 
-        assert.equal(doc._id.toString(), post._id.toString());
+        assert.equal(DocumentObjectId.toString(doc._id), DocumentObjectId.toString(post._id));
         doc.meta.date = null;
         doc.save(function (err) {
           assert.ifError(err);
@@ -244,70 +244,45 @@ describe('model query casting', function(){
     var db = start()
       , B = db.model(modelName, collection + random())
       , result = B.find({}).cast(B, {$and:[{date:'1987-03-17T20:00:00.000Z'}, {_id:'000000000000000000000000'}]});
-    assert.ok(result.$and[0].date instanceof Date);
-    assert.ok(result.$and[1]._id instanceof DocumentObjectId);
-    done();
+        assert.ok(result.$and[0].date instanceof Date);
+        assert.ok(result.$and[1]._id instanceof DocumentObjectId);
+      done();
   })
 
   describe('$near', function(){
-    this.slow(60);
-
+    this.slow(900);
     it('with arrays', function(done){
       var db = start()
         , Test = db.model('Geo4', geoSchemaArray, "y"+random());
 
-      Test.once('index', complete);
-      Test.create({ loc: [ 10, 20 ]}, { loc: [ 40, 90 ]}, complete);
-
-      var pending = 2;
-
-      function complete (err) {
-        if (complete.ran) return;
-        if (err) {
-          db.close();
-          return done(complete.ran = err);
-        }
-        --pending || test();
-      }
-
-      function test () {
-        Test.find({ loc: { $near: ['30', '40'] }}, function (err, docs) {
-          db.close();
-          assert.ifError(err);
-          assert.equal(2, docs.length);
-          done()
-        });
-      }
+      Test.create({ loc: [ 10, 20 ]}, { loc: [ 40, 90 ]}, function (err) {
+        assert.ifError(err);
+        setTimeout(function () {
+          Test.find({ loc: { $near: ['30', '40'] }}, function (err, docs) {
+            db.close();
+            assert.ifError(err);
+            assert.equal(2, docs.length);
+            done()
+          });
+        }, 100);
+      });
     });
-
     it('with objects', function(done){
       var db = start()
         , Test = db.model('Geo5', geoSchemaObject, "y"+random());
 
-      var pending = 2;
-
-      function complete (err) {
-        if (complete.ran) return;
-        if (err) {
-          db.close();
-          return done(complete.ran = err);
-        }
-        --pending || test();
-      }
-
-      function test () {
-        Test.find({ loc: { $near: ['30', '40'], $maxDistance: 51 }}, function (err, docs) {
-          db.close();
-          assert.ifError(err);
-          assert.equal(2, docs.length);
-          done()
-        });
-      }
-
-      Test.create({ loc: {long:10, lat:20 }}, { loc: {long:40, lat:90 }}, complete);
-      Test.once('index', complete);
+      Test.create({ loc: {long:10, lat:20 }}, { loc: {long:40, lat:90 }}, function (err) {
+        assert.ifError(err);
+        setTimeout(function () {
+          Test.find({ loc: { $near: ['30', '40'], $maxDistance: 51 }}, function (err, docs) {
+            db.close();
+            assert.ifError(err);
+            assert.equal(2, docs.length);
+            done()
+          });
+        }, 100);
+      });
     });
-
     it('with nested objects', function(done){
       var db = start();
       var geoSchemaObject = new Schema({ loc: { nested: { long: Number, lat: Number }}});
@@ -315,163 +290,108 @@ describe('model query casting', function(){
 
       var Test = db.model('Geo52', geoSchemaObject, "y"+random());
 
-      var pending = 2;
-
-      function complete (err) {
-        if (complete.ran) return;
-        if (err) {
-          db.close();
-          return done(complete.ran = err);
-        }
-        --pending || test();
-      }
-
-      function test () {
-        Test.find({ 'loc.nested': {$near: ['30', '40'], $maxDistance: '50' }}, function (err, docs) {
-          db.close();
-          assert.ifError(err);
-          assert.equal(1, docs.length);
-          done()
-        });
-      }
-
-      Test.once('index', complete);
-      Test.create(
-          { loc: {nested:{long:10, lat:20 }}}
-        , { loc: {nested:{long:40, lat:90 }}}
-        , complete);
-    })
-  })
-
-  describe('$nearSphere', function(){
-    this.slow(70);
-
-    it('with arrays', function(done){
-      var db = start()
-        , Test = db.model('Geo4', geoSchemaArray, "y"+random());
-
-      var pending = 2;
-      function complete (err) {
-        if (complete.ran) return;
-        if (err) return done(complete.err = err);
-        --pending || test();
-      }
-
-      Test.on('index', complete);
-      Test.create({ loc: [ 10, 20 ]}, { loc: [ 40, 90 ]}, complete);
-
-      function test () {
-        Test.find({ loc: { $nearSphere: ['30', '40'] }}, function (err, docs) {
-          db.close();
-          assert.ifError(err);
-          assert.equal(2, docs.length);
-          done()
-        });
-      }
-    });
-
-    it('with objects', function(done){
-      var db = start()
-        , Test = db.model('Geo5', geoSchemaObject, "y"+random());
-
-      var pending = 2;
-      function complete (err) {
-        if (complete.ran) return;
-        if (err) return done(complete.err = err);
-        --pending || test();
-      }
-
-      Test.on('index', complete);
-      Test.create({ loc: {long:10, lat:20 }}, { loc: {long:40, lat:90 }}, complete);
-
-      function test () {
-        Test.find({ loc: { $nearSphere: ['30', '40'], $maxDistance: 1 }}, function (err, docs) {
-          db.close();
-          assert.ifError(err);
-          assert.equal(2, docs.length);
-          done()
-        });
-      }
-    });
-
-    it('with nested objects', function(done){
-      var db = start();
-      var geoSchemaObject = new Schema({ loc: { nested: { long: Number, lat: Number }}});
-      geoSchemaObject.index({'loc.nested': '2d'});
-
-      var Test = db.model('Geo52', geoSchemaObject, "y"+random());
-
-      var pending = 2;
-      function complete (err) {
-        if (complete.ran) return;
-        if (err) return done(complete.err = err);
-        --pending || test();
-      }
-
-      Test.on('index', complete);
-      Test.create({ loc: {nested:{long:10, lat:20 }}}, { loc: {nested:{long:40, lat:90 }}}, complete);
-
-      function test () {
-        Test.find({ 'loc.nested': {$nearSphere: ['30', '40'], $maxDistance: 1 }}, function (err, docs) {
-          db.close();
-          assert.ifError(err);
-          assert.equal(2, docs.length);
-          done()
-        });
-      }
-    })
-  })
-
-  describe('$within', function(){
-    this.slow(60);
-
-    describe('$centerSphere', function(){
-      it('with arrays', function(done){
-        var db = start()
-          , Test = db.model('Geo4', geoSchemaArray, "y"+random());
-
-        var pending = 2;
-        function complete (err) {
-          if (complete.ran) return;
-          if (err) return done(complete.err = err);
-          --pending || test();
-        }
-
-        Test.on('index', complete);
-        Test.create({ loc: [ 10, 20 ]}, { loc: [ 40, 90 ]}, complete);
-
-        function test () {
-          Test.find({ loc: { $within: { $centerSphere: [['11', '20'], '0.4'] }}}, function (err, docs) {
+      Test.create({ loc: {nested:{long:10, lat:20 }}}, { loc: {nested:{long:40, lat:90 }}}, function (err) {
+        assert.ifError(err);
+        setTimeout(function () {
+          Test.find({ 'loc.nested': {$near: ['30', '40'], $maxDistance: '50' }}, function (err, docs) {
             db.close();
             assert.ifError(err);
             assert.equal(1, docs.length);
             done()
           });
-        }
+        }, 100);
+      });
+    })
+  })
+  describe('$nearSphere', function(){
+    this.slow(900);
+    it('with arrays', function(done){
+      var db = start()
+        , Test = db.model('Geo4', geoSchemaArray, "y"+random());
+
+      Test.create({ loc: [ 10, 20 ]}, { loc: [ 40, 90 ]}, function (err) {
+        assert.ifError(err);
+        setTimeout(function () {
+          Test.find({ loc: { $nearSphere: ['30', '40'] }}, function (err, docs) {
+            db.close();
+            assert.ifError(err);
+            assert.equal(2, docs.length);
+            done()
+          });
+        }, 100);
+      });
+    });
+    it('with objects', function(done){
+      var db = start()
+        , Test = db.model('Geo5', geoSchemaObject, "y"+random());
+
+      Test.create({ loc: {long:10, lat:20 }}, { loc: {long:40, lat:90 }}, function (err) {
+        assert.ifError(err);
+        setTimeout(function () {
+          Test.find({ loc: { $nearSphere: ['30', '40'], $maxDistance: 1 }}, function (err, docs) {
+            db.close();
+            assert.ifError(err);
+            assert.equal(2, docs.length);
+            done()
+          });
+        }, 100);
+      });
+    });
+    it('with nested objects', function(done){
+      var db = start();
+      var geoSchemaObject = new Schema({ loc: { nested: { long: Number, lat: Number }}});
+      geoSchemaObject.index({'loc.nested': '2d'});
+
+      var Test = db.model('Geo52', geoSchemaObject, "y"+random());
+
+      Test.create({ loc: {nested:{long:10, lat:20 }}}, { loc: {nested:{long:40, lat:90 }}}, function (err) {
+        assert.ifError(err);
+        setTimeout(function () {
+          Test.find({ 'loc.nested': {$nearSphere: ['30', '40'], $maxDistance: 1 }}, function (err, docs) {
+            db.close();
+            assert.ifError(err);
+            assert.equal(2, docs.length);
+            done()
+          });
+        }, 100);
+      });
+    })
+  })
+  describe('$within', function(){
+    this.slow(900);
+    describe('$centerSphere', function(){
+      it('with arrays', function(done){
+        var db = start()
+          , Test = db.model('Geo4', geoSchemaArray, "y"+random());
+
+        Test.create({ loc: [ 10, 20 ]}, { loc: [ 40, 90 ]}, function (err) {
+          assert.ifError(err);
+          setTimeout(function () {
+            Test.find({ loc: { $within: { $centerSphere: [['11', '20'], '0.4'] }}}, function (err, docs) {
+              db.close();
+              assert.ifError(err);
+              assert.equal(1, docs.length);
+              done()
+            });
+          }, 100);
+        });
       });
 
       it('with objects', function(done){
         var db = start()
           , Test = db.model('Geo5', geoSchemaObject, "y"+random());
 
-        var pending = 2;
-        function complete (err) {
-          if (complete.ran) return;
-          if (err) return done(complete.err = err);
-          --pending || test();
-        }
-
-        Test.on('index', complete);
-        Test.create({ loc: {long:10, lat:20 }}, { loc: {long:40, lat:90 }}, complete);
-
-        function test () {
-          Test.find({ loc: { $within: { $centerSphere: [['11', '20'], '0.4'] }}}, function (err, docs) {
-            db.close();
-            assert.ifError(err);
-            assert.equal(1, docs.length);
-            done()
-          });
-        }
+        Test.create({ loc: {long:10, lat:20 }}, { loc: {long:40, lat:90 }}, function (err) {
+          assert.ifError(err);
+          setTimeout(function () {
+            Test.find({ loc: { $within: { $centerSphere: [['11', '20'], '0.4'] }}}, function (err, docs) {
+              db.close();
+              assert.ifError(err);
+              assert.equal(1, docs.length);
+              done()
+            });
+          }, 100);
+        });
       });
 
       it('with nested objects', function(done){
@@ -481,24 +401,17 @@ describe('model query casting', function(){
 
         var Test = db.model('Geo52', geoSchemaObject, "y"+random());
 
-        var pending = 2;
-        function complete (err) {
-          if (complete.ran) return;
-          if (err) return done(complete.err = err);
-          --pending || test();
-        }
-
-        Test.on('index', complete);
-        Test.create({ loc: {nested:{long:10, lat:20 }}}, { loc: {nested:{long:40, lat:90 }}}, complete);
-
-        function test () {
-          Test.find({ 'loc.nested': { $within: { $centerSphere: [['11', '20'], '0.4'] }}}, function (err, docs) {
-            db.close();
-            assert.ifError(err);
-            assert.equal(1, docs.length);
-            done()
-          });
-        }
+        Test.create({ loc: {nested:{long:10, lat:20 }}}, { loc: {nested:{long:40, lat:90 }}}, function (err) {
+          assert.ifError(err);
+          setTimeout(function () {
+            Test.find({ 'loc.nested': { $within: { $centerSphere: [['11', '20'], '0.4'] }}}, function (err, docs) {
+              db.close();
+              assert.ifError(err);
+              assert.equal(1, docs.length);
+              done()
+            });
+          }, 100);
+        });
       })
     })
 
@@ -507,48 +420,34 @@ describe('model query casting', function(){
         var db = start()
           , Test = db.model('Geo4', geoSchemaArray, "y"+random());
 
-        var pending = 2;
-        function complete (err) {
-          if (complete.ran) return;
-          if (err) return done(complete.err = err);
-          --pending || test();
-        }
-
-        Test.on('index', complete);
-        Test.create({ loc: [ 10, 20 ]}, { loc: [ 40, 90 ]}, complete);
-
-        function test () {
-          Test.find({ loc: { $within: { $center: [['11', '20'], '1'] }}}, function (err, docs) {
-            db.close();
-            assert.ifError(err);
-            assert.equal(1, docs.length);
-            done()
-          });
-        }
+        Test.create({ loc: [ 10, 20 ]}, { loc: [ 40, 90 ]}, function (err) {
+          assert.ifError(err);
+          setTimeout(function () {
+            Test.find({ loc: { $within: { $center: [['11', '20'], '1'] }}}, function (err, docs) {
+              db.close();
+              assert.ifError(err);
+              assert.equal(1, docs.length);
+              done()
+            });
+          }, 100);
+        });
       });
 
       it('with objects', function(done){
         var db = start()
           , Test = db.model('Geo5', geoSchemaObject, "y"+random());
 
-        var pending = 2;
-        function complete (err) {
-          if (complete.ran) return;
-          if (err) return done(complete.err = err);
-          --pending || test();
-        }
-
-        Test.on('index', complete);
-        Test.create({ loc: {long:10, lat:20 }}, { loc: {long:40, lat:90 }}, complete);
-
-        function test () {
-          Test.find({ loc: { $within: { $center: [['11', '20'], '1'] }}}, function (err, docs) {
-            db.close();
-            assert.ifError(err);
-            assert.equal(1, docs.length);
-            done()
-          });
-        }
+        Test.create({ loc: {long:10, lat:20 }}, { loc: {long:40, lat:90 }}, function (err) {
+          assert.ifError(err);
+          setTimeout(function () {
+            Test.find({ loc: { $within: { $center: [['11', '20'], '1'] }}}, function (err, docs) {
+              db.close();
+              assert.ifError(err);
+              assert.equal(1, docs.length);
+              done()
+            });
+          }, 100);
+        });
       });
 
       it('with nested objects', function(done){
@@ -558,24 +457,17 @@ describe('model query casting', function(){
 
         var Test = db.model('Geo52', geoSchemaObject, "y"+random());
 
-        var pending = 2;
-        function complete (err) {
-          if (complete.ran) return;
-          if (err) return done(complete.err = err);
-          --pending || test();
-        }
-
-        Test.on('index', complete);
-        Test.create({ loc: {nested:{long:10, lat:20 }}}, { loc: {nested:{long:40, lat:90 }}}, complete);
-
-        function test () {
-          Test.find({ 'loc.nested': { $within: { $center: [['11', '20'], '1'] }}}, function (err, docs) {
-            db.close();
-            assert.ifError(err);
-            assert.equal(1, docs.length);
-            done()
-          });
-        }
+        Test.create({ loc: {nested:{long:10, lat:20 }}}, { loc: {nested:{long:40, lat:90 }}}, function (err) {
+          assert.ifError(err);
+          setTimeout(function () {
+            Test.find({ 'loc.nested': { $within: { $center: [['11', '20'], '1'] }}}, function (err, docs) {
+              db.close();
+              assert.ifError(err);
+              assert.equal(1, docs.length);
+              done()
+            });
+          }, 100);
+        });
       })
     })
 
@@ -584,48 +476,34 @@ describe('model query casting', function(){
         var db = start()
           , Test = db.model('Geo4', geoSchemaArray, "y"+random());
 
-        var pending = 2;
-        function complete (err) {
-          if (complete.ran) return;
-          if (err) return done(complete.err = err);
-          --pending || test();
-        }
-
-        Test.on('index', complete);
-        Test.create({ loc: [ 10, 20 ]}, { loc: [ 40, 90 ]}, complete);
-
-        function test () {
-          Test.find({ loc: { $within: { $polygon: [['8', '1'], ['8', '100'],['50','100'],['50','1']] }}}, function (err, docs) {
-            db.close();
-            assert.ifError(err);
-            assert.equal(2, docs.length);
-            done()
-          });
-        }
+        Test.create({ loc: [ 10, 20 ]}, { loc: [ 40, 90 ]}, function (err) {
+          assert.ifError(err);
+          setTimeout(function () {
+            Test.find({ loc: { $within: { $polygon: [['8', '1'], ['8', '100'],['50','100'],['50','1']] }}}, function (err, docs) {
+              db.close();
+              assert.ifError(err);
+              assert.equal(2, docs.length);
+              done()
+            });
+          }, 100);
+        });
       });
 
       it('with objects', function(done){
         var db = start()
           , Test = db.model('Geo5', geoSchemaObject, "y"+random());
 
-        var pending = 2;
-        function complete (err) {
-          if (complete.ran) return;
-          if (err) return done(complete.err = err);
-          --pending || test();
-        }
-
-        Test.on('index', complete);
-        Test.create({ loc: {long:10, lat:20 }}, { loc: {long:40, lat:90 }}, complete);
-
-        function test () {
-          Test.find({ loc: { $within: { $polygon: [['8', '1'], ['8', '100'],['50','100'],['50','1']] }}}, function (err, docs) {
-            db.close();
-            assert.ifError(err);
-            assert.equal(2, docs.length);
-            done()
-          });
-        }
+        Test.create({ loc: {long:10, lat:20 }}, { loc: {long:40, lat:90 }}, function (err) {
+          assert.ifError(err);
+          setTimeout(function () {
+            Test.find({ loc: { $within: { $polygon: [['8', '1'], ['8', '100'],['50','100'],['50','1']] }}}, function (err, docs) {
+              db.close();
+              assert.ifError(err);
+              assert.equal(2, docs.length);
+              done()
+            });
+          }, 100);
+        });
       });
 
       it('with nested objects', function(done){
@@ -635,24 +513,17 @@ describe('model query casting', function(){
 
         var Test = db.model('Geo52', geoSchemaObject, "y"+random());
 
-        var pending = 2;
-        function complete (err) {
-          if (complete.ran) return;
-          if (err) return done(complete.err = err);
-          --pending || test();
-        }
-
-        Test.on('index', complete);
-        Test.create({ loc: {nested:{long:10, lat:20 }}}, { loc: {nested:{long:40, lat:90 }}}, complete);
-
-        function test () {
-          Test.find({ 'loc.nested': { $within: { $polygon: [['8', '1'], ['8', '100'],['50','100'],['50','1']] }}}, function (err, docs) {
-            db.close();
-            assert.ifError(err);
-            assert.equal(2, docs.length);
-            done()
-          });
-        }
+        Test.create({ loc: {nested:{long:10, lat:20 }}}, { loc: {nested:{long:40, lat:90 }}}, function (err) {
+          assert.ifError(err);
+          setTimeout(function () {
+            Test.find({ 'loc.nested': { $within: { $polygon: [['8', '1'], ['8', '100'],['50','100'],['50','1']] }}}, function (err, docs) {
+              db.close();
+              assert.ifError(err);
+              assert.equal(2, docs.length);
+              done()
+            });
+          }, 100);
+        });
       })
     })
 
@@ -662,48 +533,34 @@ describe('model query casting', function(){
         var db = start()
           , Test = db.model('Geo4', geoSchemaArray, "y"+random());
 
-        var pending = 2;
-        function complete (err) {
-          if (complete.ran) return;
-          if (err) return done(complete.err = err);
-          --pending || test();
-        }
-
-        Test.on('index', complete);
-        Test.create({ loc: [ 10, 20 ]}, { loc: [ 40, 90 ]}, complete);
-
-        function test () {
-          Test.find({ loc: { $within: { $box: [['8', '1'], ['50','100']] }}}, function (err, docs) {
-            db.close();
-            assert.ifError(err);
-            assert.equal(2, docs.length);
-            done()
-          });
-        }
+        Test.create({ loc: [ 10, 20 ]}, { loc: [ 40, 90 ]}, function (err) {
+          assert.ifError(err);
+          setTimeout(function () {
+            Test.find({ loc: { $within: { $box: [['8', '1'], ['50','100']] }}}, function (err, docs) {
+              db.close();
+              assert.ifError(err);
+              assert.equal(2, docs.length);
+              done()
+            });
+          }, 100);
+        });
       });
 
       it('with objects', function(done){
         var db = start()
           , Test = db.model('Geo5', geoSchemaObject, "y"+random());
 
-        var pending = 2;
-        function complete (err) {
-          if (complete.ran) return;
-          if (err) return done(complete.err = err);
-          --pending || test();
-        }
-
-        Test.on('index', complete);
-        Test.create({ loc: {long:10, lat:20 }}, { loc: {long:40, lat:90 }}, complete);
-
-        function test () {
-          Test.find({ loc: { $within: { $box: [['8', '1'], ['50','100']] }}}, function (err, docs) {
-            db.close();
-            assert.ifError(err);
-            assert.equal(2, docs.length);
-            done()
-          });
-        }
+        Test.create({ loc: {long:10, lat:20 }}, { loc: {long:40, lat:90 }}, function (err) {
+          assert.ifError(err);
+          setTimeout(function () {
+            Test.find({ loc: { $within: { $box: [['8', '1'], ['50','100']] }}}, function (err, docs) {
+              db.close();
+              assert.ifError(err);
+              assert.equal(2, docs.length);
+              done()
+            });
+          }, 100);
+        });
       });
 
       it('with nested objects', function(done){
@@ -713,41 +570,18 @@ describe('model query casting', function(){
 
         var Test = db.model('Geo52', geoSchemaObject, "y"+random());
 
-        var pending = 2;
-        function complete (err) {
-          if (complete.ran) return;
-          if (err) return done(complete.err = err);
-          --pending || test();
-        }
-
-        Test.on('index', complete);
-        Test.create({ loc: {nested:{long:10, lat:20 }}}, { loc: {nested:{long:40, lat:90 }}}, complete);
-
-        function test () {
-          Test.find({ 'loc.nested': { $within: { $box: [['8', '1'], ['50','100']] }}}, function (err, docs) {
-            db.close();
-            assert.ifError(err);
-            assert.equal(2, docs.length);
-            done()
-          });
-        }
+        Test.create({ loc: {nested:{long:10, lat:20 }}}, { loc: {nested:{long:40, lat:90 }}}, function (err) {
+          assert.ifError(err);
+          setTimeout(function () {
+            Test.find({ 'loc.nested': { $within: { $box: [['8', '1'], ['50','100']] }}}, function (err, docs) {
+              db.close();
+              assert.ifError(err);
+              assert.equal(2, docs.length);
+              done()
+            });
+          }, 100);
+        });
       })
-    })
-  })
-
-  describe('$options', function(){
-    it('works on arrays gh-1462', function(done){
-      var opts = {};
-      opts.toString = function () {
-        return 'img'
-      }
-
-      var db = start()
-        , B = db.model(modelName, collection + random())
-        , result = B.find({}).cast(B, { tags: {$regex:/a/, $options: opts}});
-
-      assert.equal('img', result.tags.$options);
-      done();
     })
   })
 });

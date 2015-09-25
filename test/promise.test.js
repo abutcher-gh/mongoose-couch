@@ -1,4 +1,5 @@
 
+
 /**
  * Module dependencies.
  */
@@ -73,7 +74,7 @@ describe('Promise', function(){
     done()
   });
 
-  describe('onResolve()', function(){
+  describe('addBack()', function(){
     it('from constructor works', function(done){
       var called = 0;
 
@@ -88,18 +89,18 @@ describe('Promise', function(){
       done();
     });
 
-    it('after fulfill()', function(done){
+    it('after complete()', function(done){
       var promise = new Promise()
         , called = 0;
 
-      promise.fulfill('woot');
+      promise.complete('woot');
 
-      promise.onResolve(function (err, data){
+      promise.addBack(function (err, data){
         assert.equal(data,'woot');
         called++;
       });
 
-      promise.onResolve(function (err, data){
+      promise.addBack(function (err, data){
         assert.strictEqual(err, null);
         called++;
       });
@@ -114,12 +115,12 @@ describe('Promise', function(){
 
       promise.error(new Error('woot'));
 
-      promise.onResolve(function (err){
+      promise.addBack(function (err){
         assert.ok(err instanceof Error);
         called++;
       });
 
-      promise.onResolve(function (err){
+      promise.addBack(function (err){
         assert.ok(err instanceof Error);
         called++;
       });
@@ -128,12 +129,12 @@ describe('Promise', function(){
     })
   });
 
-  describe('onFulfill() shortcut', function(){
+  describe('addCallback() shortcut', function(){
     it('works', function(done){
       var promise = new Promise()
         , called = 0;
 
-      promise.onFulfill(function (woot) {
+      promise.addCallback(function (woot) {
         assert.strictEqual(woot, undefined);
         called++;
       });
@@ -145,12 +146,12 @@ describe('Promise', function(){
     })
   })
 
-  describe('onReject shortcut', function(){
+  describe('addErrback shortcut', function(){
     it('works', function(done){
       var promise = new Promise()
         , called = 0;
 
-      promise.onReject(function (err) {
+      promise.addErrback(function (err) {
         assert.ok(err instanceof Error);
         called++;
       });
@@ -168,19 +169,19 @@ describe('Promise', function(){
       done()
     });
 
-    it('onFulfill()', function(done){
+    it('addCallback()', function(done){
       var promise = new Promise()
-      assert.ok(promise.onFulfill(function(){}) instanceof Promise);
+      assert.ok(promise.addCallback(function(){}) instanceof Promise);
       done();
     })
-    it('onReject()', function(done){
+    it('addErrback()', function(done){
       var promise = new Promise()
-      assert.ok(promise.onReject(function(){}) instanceof Promise);
+      assert.ok(promise.addErrback(function(){}) instanceof Promise);
       done();
     })
-    it('onResolve()', function(done){
+    it('addBack()', function(done){
       var promise = new Promise()
-      assert.ok(promise.onResolve(function(){}) instanceof Promise);
+      assert.ok(promise.addBack(function(){}) instanceof Promise);
       done();
     })
   })

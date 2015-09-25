@@ -26,10 +26,6 @@ var schema = new Schema({
   , likes: [String]
 }, { shardkey: { name: 1, age: 1 }});
 
-// to keep mongodb happy when sharding the collection
-// we add a matching index
-schema.index({ name: 1, age: 1 });
-
 var collection = 'shardperson_' + random();
 mongoose.model('ShardPerson', schema, collection);
 
@@ -55,34 +51,27 @@ describe('shard', function(){
       // set up a sharded test collection
       var P = db.model('ShardPerson', collection);
 
-      // an existing index on shard key is required before sharding
-      P.on('index', function () {
+      var cmd = {};
+      cmd.shardcollection = db.name + '.' + collection;
+      cmd.key = P.schema.options.shardkey;
 
-        // enable sharding on our collection
-        var cmd = {};
-        cmd.shardcollection = db.name + '.' + collection;
-        cmd.key = P.schema.options.shardkey;
+      P.db.db.executeDbAdminCommand(cmd,function (err, res) {
+        assert.ifError(err);
 
-        P.db.db.executeDbAdminCommand(cmd,function (err, res) {
+        if (!(res && res.documents && res.documents[0] && res.documents[0].ok)) {
+          throw new Error('could not shard test collection '
+              + collection + '\n'
+              + res.documents[0].errmsg);
+        }
+
+        db.db.admin(function (err, admin) {
           assert.ifError(err);
-
-          if (!(res && res.documents && res.documents[0] && res.documents[0].ok)) {
-            throw new Error('could not shard test collection '
-                + collection + '\n'
-                + res.documents[0].errmsg +'\n'
-                + 'Make sure to use a different database than what '
-                + 'is used for the MULTI_MONGOS_TEST' );
-          }
-
-          db.db.admin(function (err, admin) {
+          admin.serverStatus(function (err, info) {
+            db.close();
             assert.ifError(err);
-            admin.serverStatus(function (err, info) {
-              db.close();
-              assert.ifError(err);
-              version = info.version.split('.').map(function(n){return parseInt(n, 10) });
-              greaterThan20x = 2 < version[0] || 2==version[0] && 0<version[0];
-              done();
-            });
+            version = info.version.split('.').map(function(n){return parseInt(n, 10) });
+            greaterThan20x = 2 < version[0] || 2==version[0] && 0<version[0];
+            done();
           });
         });
       });
@@ -297,5 +286,4 @@ describe('shard', function(){
       done();
     });
   });
-
 })

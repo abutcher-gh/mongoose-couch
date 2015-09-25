@@ -313,6 +313,7 @@ describe('model: populate:', function(){
           });
         })
 
+        // TODO adjust ElemMatchError case to include populated arrays that were matched
       })
     })
   })
