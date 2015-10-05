@@ -1,6 +1,5 @@
 var mongoose = require('./lib/index');
 var Schema = mongoose.Schema;
-var cradle = require('cradle');
 
 mongoose.connect('http://localhost', process.env.COUCH_PORT || 5984, {
   cache: process.env.NO_CACHE ? false : true,
@@ -52,6 +51,9 @@ AccountSchema.path('slug').set(function(v) {
 
 module.exports = Account = mongoose.model('Account', AccountSchema);
 
+
+Account.collection.ensureDb(function() {
+
 Account.schema.post('save', function(doc) {
   console.log("SAVE.OK:\n", doc);
 });
@@ -102,4 +104,6 @@ Account.find({}).remove(function(err, res) {
       });
     });
   });
+});
+
 });
