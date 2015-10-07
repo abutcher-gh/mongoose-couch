@@ -72,7 +72,6 @@ var Indices = [
 ];
 
 async.series([
-   (next) => NamedEntity.collection.ensureDb((err) => err? console.log(err) : next()),
    (next) => ensureIndicies(NamedEntity, Indices, next),
    (next) => NamedEntity.find({}).remove(next),
    (next) => {
