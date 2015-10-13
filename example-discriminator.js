@@ -27,7 +27,7 @@ let UserSchema = new mongoose.Schema({
 });
 
 let GroupSchema = new mongoose.Schema({
-   name: { type: String, index: true },
+   name: { type: String, index: '.toUpperCase()' },
    displayName: { type: String },
    members: [{ type: String, ref: 'NamedEntity' }],
 }, {
